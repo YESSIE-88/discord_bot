@@ -11,3 +11,11 @@ Run  the command: npm i dotenv
 Enter your own discord token in the .env file
 
 To start the bot in the server use: node index.js
+
+Alternatively you can host this bot on a remote server, like droplet or google app engines:
+
+To start the bot with google app engines use: gcloud app deploy
+
+To stop the bot with google app engines use: gcloud app services update default --no-serving
+
+MAKE SURE TO ONKY HAVE THE BOT RUNNING IN ONE INSTANCE AT A TIME!!!
