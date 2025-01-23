@@ -1,3 +1,10 @@
-runtime: nodejs18
+runtime: nodejs16
+instance_class: F2  # Flexible instance for long-running apps
+
+manual_scaling:
+  instances: 1  # Keeps the bot running
+
+env_variables:
+  DISCORD_TOKEN: "your_discord_bot_token_here"
+
 entrypoint: node index.js
-instance_class: F1
