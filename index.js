@@ -37,84 +37,102 @@ let customTitle = ""; // Store the custom title
 let customText = ""; // Store the custom text
 let customColor = "#c0f7ff"; // Default color (Light Blue)
 
+let annoying = false;
+
 client.on("messageCreate", async (message) => {
 
     if (
         message.channel.type === 0 && // Ensure it's a text channel
         !message.author.bot // Ignore bot messages
     ) {
+
+        //Bot repeating everthing to be annoying :D
+        if (message.channel.name !== 'random' && annoying) {
+            await message.reply(message.content)
+        }
         
-        // Sign in with the sign in channel
-        // if (message.channel.name === '🍰﹕sign-in') {
-        //     console.log(`Message in sign-in channel: ${message.author.tag}: ${message.content}`);
+        //Sign in with the sign in channel
+        else if (message.channel.name === '🍰﹕sign-in') {
+            console.log(`Message in sign-in channel: ${message.author.tag}: ${message.content}`);
             
-        //     try {
-        //         const member = message.guild.members.cache.get(message.author.id);
+            try {
+                const member = message.guild.members.cache.get(message.author.id);
                 
-        //         if (member) {
+                if (member) {
 
-        //             // Check if the user's nickname already contains the emoji 🧁
-        //             if (member.nickname?.includes('🧁') || member.displayName.includes('🧁')) {
-        //                 console.log(`User ${message.author.tag} already signed in. Skipping further processing.`);
-        //             } else {
-        //                 const words = message.content.trim().split(/\s+/);
+                    // Check if the user's nickname already contains the emoji 🧁
+                    if (member.nickname?.includes('🧁') || member.displayName.includes('🧁')) {
+                        console.log(`User ${message.author.tag} already signed in. Skipping further processing.`);
+                    } else {
+                        const words = message.content.trim().split(/\s+/);
 
-        //                 if (words.length === 3) {
-        //                     let newNickname = `${words[0]} 🧁 ${words[1]} ${words[2]}`;
+                        if (words.length === 3) {
+                            let newNickname = `${words[0]} 🧁 ${words[1]} ${words[2]}`;
 
-        //                     // Automatically capitalize the first character of each word
-        //                     newNickname = capitalizeWords(newNickname);
+                            // Automatically capitalize the first character of each word
+                            newNickname = capitalizeWords(newNickname);
 
-        //                     if (newNickname.length > 32) {
-        //                         await message.reply({
-        //                             content: 'Nickname is too long. Please ensure your nickname is 32 characters or less. If you need additional help you can @ an admin.'
-        //                         });
-        //                         console.log('Nickname is too long:', newNickname);
-        //                     } else {
-        //                         await member.setNickname(newNickname);
-        //                         console.log(`Changed nickname for ${message.author.tag} to "${newNickname}"`);
+                            if (newNickname.length > 32) {
+                                await message.reply({
+                                    content: 'Nickname is too long. Please ensure your nickname is 32 characters or less. If you need additional help you can @ an admin.'
+                                });
+                                console.log('Nickname is too long:', newNickname);
+                            } else {
+                                await member.setNickname(newNickname);
+                                console.log(`Changed nickname for ${message.author.tag} to "${newNickname}"`);
 
-        //                         const messages = await message.channel.messages.fetch({ limit: 100 });
-        //                         const messagesArray = Array.from(messages.values());
+                                const messages = await message.channel.messages.fetch({ limit: 100 });
+                                const messagesArray = Array.from(messages.values());
 
-        //                         for (let i = 0; i < messagesArray.length; i++) {
-        //                             try {
-        //                                 if (messagesArray[i].author.id === message.author.id && messagesArray[i - 1]?.author.bot) {
-        //                                     await messagesArray[i].delete();
-        //                                     console.log(`Deleted message ${i + 1}/${messagesArray.length}`);
-        //                                     await messagesArray[i - 1].delete();
-        //                                     console.log(`Deleted bot's message ${i}/${messagesArray.length}`);
-        //                                 }
-        //                             } catch (err) {
-        //                                 console.error(`Error reading message at index ${i}:`, err);
-        //                             }
-        //                         }
+                                for (let i = 0; i < messagesArray.length; i++) {
+                                    try {
+                                        if (messagesArray[i].author.id === message.author.id && messagesArray[i - 1]?.author.bot) {
+                                            await messagesArray[i].delete();
+                                            console.log(`Deleted message ${i + 1}/${messagesArray.length}`);
+                                            await messagesArray[i - 1].delete();
+                                            console.log(`Deleted bot's message ${i}/${messagesArray.length}`);
+                                        }
+                                    } catch (err) {
+                                        console.error(`Error reading message at index ${i}:`, err);
+                                    }
+                                }
 
-        //                         await message.reply({
-        //                             content: `Thanks for signing in, ${message.author}!`
-        //                         });
+                                await message.reply({
+                                    content: `Thanks for signing in, ${message.author}!`
+                                });
 
-        //                     }
-        //                 } else {
-        //                     await message.reply({
-        //                         content: 'Invalid nickname format, please enter your nickname as: "{name} {sso firstname} {sso lastname}". If you need additional help, you can @ an admin.'
-        //                     });
-        //                     console.log(`Message does not have exactly 3 words: "${message.content}"`);
-        //                 }
-        //             }
+                            }
+                        } else {
+                            await message.reply({
+                                content: 'Invalid nickname format, please enter your nickname as: "{name} {sso firstname} {sso lastname}". If you need additional help, you can @ an admin.'
+                            });
+                            console.log(`Message does not have exactly 3 words: "${message.content}"`);
+                        }
+                    }
 
-        //         } else {
-        //             console.error('Member not found in guild.');
-        //         }
-        //     } catch (err) {
-        //         console.error('Error processing sign-in:', err);
-        //     }
-        // }
+                } else {
+                    console.error('Member not found in guild.');
+                }
+            } catch (err) {
+                console.error('Error processing sign-in:', err);
+            }
+        }
 
-        // Check for commands in the random channel
+        // This channel will be used for bot commands
         if (message.channel.name === 'random') {
+
+            if (message.content.startsWith('bot_be_annoying')){
+                annoying = true;
+                await message.reply('I am going to be so annoying');
+            }
+
+            else if (message.content.startsWith('bot_stop_annoying')){
+                annoying = false;
+                await message.reply('Okay Ill stop');
+            }
+
             // Command to start embed creation
-            if (message.content.startsWith('bot_make_embed')) {
+            else if (message.content.startsWith('bot_make_embed')) {
                 if (waitingForChannel || waitingForTitle || waitingForText || waitingForColor) {
                     await message.reply('I am already in the process of creating an embed. Please complete or cancel it.');
                 } else {
