@@ -18,7 +18,9 @@ To start the bot with google app engines use: gcloud app deploy
 
 To pause the bot you can just redeploy it with an invalid token
 
-To list versions you can list them: with gcloud app versions list
+To list versions you can list them with: gcloud app versions list
 To delete them use: gcloud app versions delete VERSION.ID
+
+Finally the third option (and best imo) is to run this on a raspberry pi or other sbc because you have more control and its basicaly free
 
 MAKE SURE TO ONKY HAVE THE BOT RUNNING IN ONE INSTANCE AT A TIME!!!
