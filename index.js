@@ -119,7 +119,7 @@ client.on("messageCreate", async (message) => {
         }
 
         // This channel will be used for bot commands
-        if (message.channel.name === 'random') {
+        else if (message.channel.name === 'random') {
 
             if (message.content.startsWith('bot_be_annoying')){
                 annoying = true;
@@ -221,6 +221,26 @@ client.on("messageCreate", async (message) => {
                 } else {
                     await message.reply('Invalid color code. Please provide a valid hex code in the format "#RRGGBB". For example: "#c0f7ff".');
                 }
+            }
+        }
+
+        // Copy messages over from the abscences anouncement channel to the logging channel
+        else if (message.channel.name === '₊˚🌼ෆabsences') {
+            // Get the sender's display name or username
+            const senderName = message.member ? message.member.displayName : message.author.username;
+            
+            // Get the message content
+            const messageContent = message.content;
+        
+            // Find the target channel named 'absence-logs'
+            const logChannel = message.guild.channels.cache.find(channel => channel.name === 'absence-logs');
+        
+            if (logChannel && logChannel.isTextBased()) {
+                // Send the formatted message to 'absence-logs'
+                await logChannel.send(`**Absence Notice**\n📌 **From:** ${senderName}\n📝 **Message:** ${messageContent}`);
+                console.log(`Logged absence message from ${senderName} to 'absence-logs'`);
+            } else {
+                console.error('Error: Could not find the "absence-logs" channel.');
             }
         }
 
