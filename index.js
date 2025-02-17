@@ -12,6 +12,8 @@ const client = new Client({
     ],
 });
 
+const { EmbedBuilder } = require('discord.js');
+
 client.login(process.env.DISCORD_TOKEN).then(() => {
     console.log('Bot logged in successfully!');
 }).catch(err => {
@@ -28,11 +30,16 @@ function capitalizeWords(text) {
 }
 
 // Track bot states
+let makingNewEmbed = false;
+let attempEditEmbed = false;
+let editingSelectedEmbed = false;
 let waitingForChannel = false;
 let waitingForTitle = false;
 let waitingForText = false;
 let waitingForColor = false;
+let waitingForEditingChoice = false;
 let targetChannel = null; // Store the selected channel
+let targetEmbed = null; // Store the selected emebed to edit
 let customTitle = ""; // Store the custom title
 let customText = ""; // Store the custom text
 let customColor = "#c0f7ff"; // Default color (Light Blue)
@@ -121,29 +128,40 @@ client.on("messageCreate", async (message) => {
         // This channel will be used for bot commands
         else if (message.channel.name === 'random') {
 
-            if (message.content.startsWith('bot_be_annoying')){
+            if (message.content === 'help' || message.content === 'Help') {
+                await message.reply('The commands you can use are:\nbot_be_annoying (makes the bot repeat everything everyone says)\nbot_stop_annoying (makes the bot stop repeating everything)\nbot_make_embed (create an embed)\nbot_cancel_make_embed (discard embed creation)\nbot_edit_embed (edit an already existing embed)\nbot_cancel_edit_embed (discard editing an embed)')
+            }
+
+            else if (message.content === 'bot_be_annoying'){
                 annoying = true;
                 await message.reply('I am going to be so annoying');
             }
 
-            else if (message.content.startsWith('bot_stop_annoying')){
+            else if (message.content ==='bot_stop_annoying'){
                 annoying = false;
                 await message.reply('Okay Ill stop');
             }
 
             // Command to start embed creation
-            else if (message.content.startsWith('bot_make_embed')) {
-                if (waitingForChannel || waitingForTitle || waitingForText || waitingForColor) {
+            else if (message.content ==='bot_make_embed') {
+                if (makingNewEmbed) {
                     await message.reply('I am already in the process of creating an embed. Please complete or cancel it.');
-                } else {
+                } 
+                
+                else if (attempEditEmbed || editingSelectedEmbed) {
+                    await message.reply('I am alreay in the process of editing an embed. Please complete or cancel it.');
+                }
+
+                else {
                     waitingForChannel = true;
+                    makingNewEmbed = true;
                     await message.reply('In which channel would you like to generate the embed?');
                 }
             }
 
             // Command to cancel embed creation
-            else if (message.content.startsWith('bot_cancel_embed')) {
-                if (waitingForChannel || waitingForTitle || waitingForText || waitingForColor) {
+            else if (message.content === 'bot_cancel_make_embed') {
+                if (makingNewEmbed) {
                     waitingForChannel = false;
                     waitingForTitle = false;
                     waitingForText = false;
@@ -152,9 +170,46 @@ client.on("messageCreate", async (message) => {
                     customTitle = "";
                     customText = "";
                     customColor = "#c0f7ff"; // Reset to default color
+                    makingNewEmbed = false;
                     await message.reply('Canceled making the embed.');
                 } else {
                     await message.reply('There is no embed creation process to cancel.');
+                }
+            }
+
+            // Command to edit an existing embed
+            else if (message.content === 'bot_edit_embed') {
+                if (makingNewEmbed) {
+                    await message.reply('I am already in the process of creating an embed. Please complete or cancel it.');
+                } 
+                
+                else if (attempEditEmbed || editingSelectedEmbed) {
+                    await message.reply('I am alreay in the process of editing an embed. Please complete or cancel it.');
+                }
+                
+                else {
+                    waitingForChannel = true;
+                    attempEditEmbed = true;
+                    await message.reply('In which channel is the embed you would like to edit?');
+                }
+            }
+
+            // Command to cancel embed editing
+            else if (message.content === 'bot_cancel_edit_embed') {
+                if (attempEditEmbed || editingSelectedEmbed) {
+                    waitingForChannel = false;
+                    waitingForTitle = false;
+                    waitingForText = false;
+                    waitingForColor = false;
+                    targetChannel = null;
+                    customTitle = "";
+                    customText = "";
+                    customColor = "#c0f7ff"; // Reset to default color
+                    attempEditEmbed = false;
+                    editingSelectedEmbed = false;
+                    await message.reply('Canceled editing the embed.');
+                } else {
+                    await message.reply('There is no embed editing process to cancel.');
                 }
             }
 
@@ -166,7 +221,11 @@ client.on("messageCreate", async (message) => {
                 if (targetChannel && targetChannel.isTextBased()) {
                     waitingForChannel = false;
                     waitingForTitle = true; // Move to the next step
-                    await message.reply(`Channel "${targetChannelName}" selected. What title would you like for the embed?`);
+                    if (makingNewEmbed) {
+                        await message.reply(`Channel "${targetChannelName}" selected. What title would you like for the embed?`);
+                    } else if (attempEditEmbed) {
+                        await message.reply(`Channel "${targetChannelName}" selected. What is the title of the embed you would like to edit?`);
+                    }
                 } else {
                     await message.reply(`Channel "${targetChannelName}" not found or is not a text channel. Please try again.`);
                 }
@@ -175,17 +234,65 @@ client.on("messageCreate", async (message) => {
             // Handle title response when waiting for title input
             else if (waitingForTitle) {
                 customTitle = message.content.trim();
-                waitingForTitle = false; // Reset title state
-                waitingForText = true; // Move to the next step
-                await message.reply(`Title saved. What body text would you like for the embed?`);
+                
+                if (makingNewEmbed) {
+                    waitingForTitle = false; // Reset title state
+                    waitingForText = true; // Move to the next step
+                    await message.reply(`Title saved. What body text would you like for the embed?`);
+                } 
+                
+                else if (attempEditEmbed) {
+                    // Check embed exists
+                    try {
+                        let searchMessages = await targetChannel.messages.fetch({ limit: 100 }); // Fetch last 100 messages
+                        for (let searchMessage of searchMessages.values()) {
+                            if (searchMessage.embeds.length > 0) {
+                                for (let embed of searchMessage.embeds) {
+                                    if (embed.title === customTitle) {
+                                        targetEmbed = searchMessage; // Save the embed object to edit it.
+                                        waitingForTitle = false;
+                                        waitingForEditingChoice = true;
+                                        await message.reply('Embed located. What part of the embed would you like to change?\nTitle: 1\nText: 2\nColour: 3');
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error fetching messages:", error);
+                    }
+                }
+
+                else if (editingSelectedEmbed){
+                    const oldEmbed = targetEmbed.embeds[0];
+
+                    const updatedEmbed = EmbedBuilder.from(oldEmbed).setTitle(customTitle);
+
+                    await targetEmbed.edit({ embeds: [updatedEmbed] });
+
+                    editingSelectedEmbed = false;
+                    waitingForTitle = false;
+                }
             }
 
             // Handle text response when waiting for text input
             else if (waitingForText) {
                 customText = message.content.trim();
-                waitingForText = false; // Reset text state
-                waitingForColor = true; // Move to the next step
-                await message.reply(`Text saved. Please provide a color code for the embed in the format "#RRGGBB". For example: "#c0f7ff".`);
+                if (makingNewEmbed){
+                    waitingForText = false; // Reset text state
+                    waitingForColor = true; // Move to the next step
+                    await message.reply(`Text saved. Please provide a color code for the embed in the format "#RRGGBB". For example: "#c0f7ff".`);
+                } 
+                
+                else if(editingSelectedEmbed) {
+                    const oldEmbed = targetEmbed.embeds[0];
+
+                    const updatedEmbed = EmbedBuilder.from(oldEmbed).setDescription(customText);
+
+                    await targetEmbed.edit({ embeds: [updatedEmbed] });
+
+                    editingSelectedEmbed = false;
+                    waitingForText = false;   
+                }
             }
 
             // Handle color response when waiting for color input
@@ -197,7 +304,8 @@ client.on("messageCreate", async (message) => {
                     customColor = colorInput; // Store the valid hex color
                     waitingForColor = false; // Reset color state
 
-                    const embed = {
+                    if (makingNewEmbed){
+                        const embed = {
                         color: parseInt(customColor.slice(1), 16), // Convert the hex color to an integer
                         title: customTitle, // Use the custom title
                         description: customText, // Use the custom text
@@ -218,8 +326,50 @@ client.on("messageCreate", async (message) => {
                     customTitle = "";
                     customText = "";
                     customColor = "#c0f7ff"; // Reset to default color
+                    makingNewEmbed = false;
+                    } 
+                    
+                    else if (editingSelectedEmbed){
+
+                        const oldEmbed = targetEmbed.embeds[0];
+
+                        const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor(customColor);
+
+                        await targetEmbed.edit({ embeds: [updatedEmbed] });
+
+                        editingSelectedEmbed = false;
+                        waitingForColor = false;
+                    }
+                    
                 } else {
                     await message.reply('Invalid color code. Please provide a valid hex code in the format "#RRGGBB". For example: "#c0f7ff".');
+                }
+            }
+
+            else if (waitingForEditingChoice){
+                if (message.content === '1') {
+                    await message.reply('Please enter the new title');
+                    attempEditEmbed = false;
+                    editingSelectedEmbed = true;
+                    waitingForTitle = true;
+                } 
+                
+                else if (message.content === '2'){
+                    await message.reply('Please enter new text');
+                    attempEditEmbed = false;
+                    editingSelectedEmbed = true;
+                    waitingForText = true;
+                }
+                
+                else if (message.content === '3'){
+                    await message.reply('Please enter new colour');
+                    attempEditEmbed = false;
+                    editingSelectedEmbed = true;
+                    waitingForColor = true;
+                }
+                
+                else {
+                    await message.reply('That is not a valid choice');             
                 }
             }
         }
