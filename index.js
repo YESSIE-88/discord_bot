@@ -1,7 +1,8 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Worker } = require('worker_threads');
 
 const client = new Client({
     intents: [
@@ -11,8 +12,6 @@ const client = new Client({
         GatewayIntentBits.MessageContent, // Required to read message content
     ],
 });
-
-const { EmbedBuilder } = require('discord.js');
 
 client.login(process.env.DISCORD_TOKEN).then(() => {
     console.log('Bot logged in successfully!');
@@ -43,6 +42,8 @@ let targetEmbed = null; // Store the selected emebed to edit
 let customTitle = ""; // Store the custom title
 let customText = ""; // Store the custom text
 let customColor = "#c0f7ff"; // Default color (Light Blue)
+let sentEmbedMessageId = null; // Variable to store the message ID (for the ascii animation)
+let whale_button_pressed = false; // Boolean to track the button state
 
 let annoying = false;
 
@@ -129,7 +130,7 @@ client.on("messageCreate", async (message) => {
         else if (message.channel.name === 'random') {
 
             if (message.content === 'help' || message.content === 'Help') {
-                await message.reply('The commands you can use are:\nbot_be_annoying (makes the bot repeat everything everyone says)\nbot_stop_annoying (makes the bot stop repeating everything)\nbot_make_embed (create an embed)\nbot_cancel_make_embed (discard embed creation)\nbot_edit_embed (edit an already existing embed)\nbot_cancel_edit_embed (discard editing an embed)')
+                await message.reply('The commands you can use are:\nbot_be_annoying (makes the bot repeat everything everyone says)\nbot_stop_annoying (makes the bot stop repeating everything)\nbot_make_embed (create an embed)\nbot_cancel_make_embed (discard embed creation)\nbot_edit_embed (edit an already existing embed)\nbot_cancel_edit_embed (discard editing an embed)\nbot_whale_animation (ascii animation in embed)')
             }
 
             else if (message.content === 'bot_be_annoying'){
@@ -372,6 +373,65 @@ client.on("messageCreate", async (message) => {
                     await message.reply('That is not a valid choice');             
                 }
             }
+
+            else if (message.content === 'bot_whale_animation') {
+                if (makingNewEmbed) {
+                    await message.reply('I am in the process of creating an embed. Please complete or cancel it.');
+                } 
+                
+                else if (attempEditEmbed || editingSelectedEmbed) {
+                    await message.reply('I am in the process of editing an embed. Please complete or cancel it.');
+                } 
+                
+                else {
+                    customTitle = "Whale Animation!!!";
+                    customText = " ";
+                    customColor = "#3c75de";
+                    
+                    // Create the embed using EmbedBuilder
+                    const embed = new EmbedBuilder()
+                        .setColor(customColor)
+                        .setTitle(customTitle)
+                        .setDescription(customText);
+            
+                    // Create a button using ButtonBuilder
+                    const button = new ButtonBuilder()
+                        .setCustomId('whale_animation_button')
+                        .setLabel('Start Animation')
+                        .setStyle(ButtonStyle.Primary);
+            
+                    // Create an action row for the button
+                    const row = new ActionRowBuilder().addComponents(button);
+            
+                    // Retrieve the target channel by its name
+                    const targetChannel = message.guild.channels.cache.find(channel => 
+                        //channel.name === 'botbotbot' && channel.type === 0 // used for testing
+                        channel.name === '◜general🍰' && channel.type === 0 // Ensure it's a text channel
+                    );
+            
+                    if (targetChannel) {
+                        try {
+                            // Send the embed and store the message ID for later
+                            const sentMessage = await targetChannel.send({ embeds: [embed], components: [row] });
+                            console.log(`Embed sent to the "${targetChannel.name}" channel with title: "${customTitle}", text: "${customText}", and color: "${customColor}".`);
+                            await message.reply(`Embed successfully sent to the "${targetChannel.name}" channel with the title: "${customTitle}", text: "${customText}", and color: "${customColor}".`);
+                            
+                            // Store the sent message ID
+                            sentEmbedMessageId = sentMessage.id;
+                        } catch (err) {
+                            console.error(`Error sending embed to the "${targetChannel.name}" channel:`, err);
+                            await message.reply('There was an error sending the embed. Please try again later.');
+                        }
+                    } else {
+                        await message.reply('Could not find the "◜general🍰" channel.');
+                    }
+            
+                    customTitle = "";
+                    customText = "";
+                    customColor = "#c0f7ff"; // Reset to default color
+                }
+            }
+            
         }
 
         // Copy messages over from the abscences anouncement channel to the logging channel
@@ -399,4 +459,51 @@ client.on("messageCreate", async (message) => {
 
 client.on('error', (err) => {
     console.error('Bot encountered an error:', err);
+});
+
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
+
+    if (interaction.customId === 'whale_animation_button' && !whale_button_pressed) {
+        console.log(`Button clicked by ${interaction.user.tag}`);
+        whale_button_pressed = true;
+
+        if (!sentEmbedMessageId) {
+            console.error('Error: No stored message ID.');
+            return;
+        }
+
+        const targetChannel = interaction.guild.channels.cache.find(channel => 
+            //channel.name === 'botbotbot' && channel.isTextBased() // used for testing
+            channel.name === '◜general🍰' && channel.isTextBased()
+        );
+
+        if (!targetChannel) {
+            console.error('Error: Target channel not found.');
+            return;
+        }
+
+        // ✅ Pass only necessary data to the worker
+        const worker = new Worker('./embedWorker.js');
+        worker.postMessage({
+            messageId: sentEmbedMessageId,
+            channelId: targetChannel.id,
+            guildId: interaction.guild.id,
+        });
+
+        worker.on('error', (err) => console.error('Worker Error:', err));
+        worker.on('exit', (code) => {
+            if (code !== 0) console.error(`Worker stopped with exit code ${code}`);
+        });
+
+        worker.on('message', (message) => {
+            if (message.status === 'done') {
+                console.log('Worker has finished running!');
+                whale_button_pressed = false;
+            }
+        });
+        
+
+        await interaction.deferUpdate(); // Acknowledge interaction
+    }
 });
