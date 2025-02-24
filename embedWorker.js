@@ -74,6 +74,41 @@ const whale_4 = `
 \`\`\`
 `;
 
+const cat_0 = `
+\`\`\`
+
+      ,_     _,
+      |\\___//|
+      |=6   6=|
+      \\=._Y_.=/
+       )  '  (   ,
+      /       \\  ))
+      |       | ((
+     /| |   | |\\_\\\\
+     \\| |._.| |/--'
+      '"'   '"'
+
+\`\`\`
+`;
+
+const cat_1 = `
+\`\`\`
+
+      ,_     _,
+      |\\___//|
+      |=6   6=|
+      \\=._Y_.=/
+       )  '  (    ,
+      /       \\  ((
+      |       |   ))
+     /| |   | |\\_//
+     \\| |._.| |/-'
+      '"'   '"'
+
+\`\`\`
+`;
+
+
 // Blocking sleep function
 function sleep(ms) {
     const start = Date.now();
@@ -83,7 +118,7 @@ function sleep(ms) {
 }
 
 parentPort.on('message', async (data) => {
-    const { messageId, channelId, guildId} = data;
+    const { messageId, channelId, guildId, animal} = data;
 
     const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
@@ -108,30 +143,45 @@ parentPort.on('message', async (data) => {
             const targetMessage = await channel.messages.fetch(messageId);
             for (let i = 0; i < 5; i++) {
 
-                let updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
+                if (animal === "whale"){
+                    updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
                     .setDescription(whale_0);
-                await targetMessage.edit({ embeds: [updatedEmbed] });
-                sleep(1000);  // Delay for 1000ms (1 second)
+                    await targetMessage.edit({ embeds: [updatedEmbed] });
+                    sleep(1000);  // Delay for 1000ms (1 second)
 
-                updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
-                    .setDescription(whale_1);
-                await targetMessage.edit({ embeds: [updatedEmbed] });
-                sleep(1000);  // Delay for 1000ms (1 second)
+                    updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
+                        .setDescription(whale_1);
+                    await targetMessage.edit({ embeds: [updatedEmbed] });
+                    sleep(1000);  // Delay for 1000ms (1 second)
 
-                updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
-                    .setDescription(whale_2);
-                await targetMessage.edit({ embeds: [updatedEmbed] });
-                sleep(1000);  // Delay for 1000ms (1 second)
+                    updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
+                        .setDescription(whale_2);
+                    await targetMessage.edit({ embeds: [updatedEmbed] });
+                    sleep(1000);  // Delay for 1000ms (1 second)
 
-                updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
-                    .setDescription(whale_3);
-                await targetMessage.edit({ embeds: [updatedEmbed] });
-                sleep(1000);  // Delay for 1000ms (1 second)
+                    updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
+                        .setDescription(whale_3);
+                    await targetMessage.edit({ embeds: [updatedEmbed] });
+                    sleep(1000);  // Delay for 1000ms (1 second)
 
-                updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
-                    .setDescription(whale_4);
-                await targetMessage.edit({ embeds: [updatedEmbed] });
-                sleep(1000);  // Delay for 1000ms (1 second)
+                    updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
+                        .setDescription(whale_4);
+                    await targetMessage.edit({ embeds: [updatedEmbed] });
+                    sleep(1000);  // Delay for 1000ms (1 second)
+                }
+                else if (animal === "cat"){
+                    updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
+                    .setDescription(cat_0);
+                    await targetMessage.edit({ embeds: [updatedEmbed] });
+                    sleep(1000);  // Delay for 1000ms (1 second)
+                    
+                    updatedEmbed = EmbedBuilder.from(targetMessage.embeds[0])
+                    .setDescription(cat_1);
+                    await targetMessage.edit({ embeds: [updatedEmbed] });
+                    sleep(1000);  // Delay for 1000ms (1 second)
+                }
+
+                
             }
 
             parentPort.postMessage({ status: 'done' }); // Let the parent know it can re enable the button

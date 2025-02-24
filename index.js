@@ -29,6 +29,7 @@ function capitalizeWords(text) {
 }
 
 // Track bot states
+let testing = false; // Indicate if we are testing the bot (changes output channels)
 let makingNewEmbed = false;
 let attempEditEmbed = false;
 let editingSelectedEmbed = false;
@@ -42,8 +43,10 @@ let targetEmbed = null; // Store the selected emebed to edit
 let customTitle = ""; // Store the custom title
 let customText = ""; // Store the custom text
 let customColor = "#c0f7ff"; // Default color (Light Blue)
-let sentEmbedMessageId = null; // Variable to store the message ID (for the ascii animation)
-let whale_button_pressed = false; // Boolean to track the button state
+let whaleEmbedMessageId = null; // Variable to store the message ID (for the ascii animation)
+let catEmbedMessageId = null; // Variable to store the message ID (for the ascii animation)
+let whale_button_pressed = false; // Boolean to track the whale button state
+let cat_button_pressed = false; // Boolean to track the cat button state
 
 let annoying = false;
 
@@ -130,7 +133,7 @@ client.on("messageCreate", async (message) => {
         else if (message.channel.name === 'random') {
 
             if (message.content === 'help' || message.content === 'Help') {
-                await message.reply('The commands you can use are:\nbot_be_annoying (makes the bot repeat everything everyone says)\nbot_stop_annoying (makes the bot stop repeating everything)\nbot_make_embed (create an embed)\nbot_cancel_make_embed (discard embed creation)\nbot_edit_embed (edit an already existing embed)\nbot_cancel_edit_embed (discard editing an embed)\nbot_whale_animation (ascii animation in embed)')
+                await message.reply('The commands you can use are:\nbot_be_annoying (makes the bot repeat everything everyone says)\nbot_stop_annoying (makes the bot stop repeating everything)\nbot_make_embed (create an embed)\nbot_cancel_make_embed (discard embed creation)\nbot_edit_embed (edit an already existing embed)\nbot_cancel_edit_embed (discard editing an embed)\nbot_whale_animation (whale ascii animation in embed)\nbot_cat_animation (cat ascii animation in embed)')
             }
 
             else if (message.content === 'bot_be_annoying'){
@@ -404,10 +407,12 @@ client.on("messageCreate", async (message) => {
                     const row = new ActionRowBuilder().addComponents(button);
             
                     // Retrieve the target channel by its name
-                    const targetChannel = message.guild.channels.cache.find(channel => 
-                        //channel.name === 'botbotbot' && channel.type === 0 // used for testing
-                        channel.name === '◜general🍰' && channel.type === 0 // Ensure it's a text channel
-                    );
+                    if (testing) {
+                        targetChannel = message.guild.channels.cache.find(channel => channel.name === 'botbotbot' && channel.isTextBased());
+                    }
+                    else {
+                        targetChannel = message.guild.channels.cache.find(channel => channel.name === '◜general🍰' && channel.isTextBased());
+                    }
             
                     if (targetChannel) {
                         try {
@@ -417,7 +422,67 @@ client.on("messageCreate", async (message) => {
                             await message.reply(`Embed successfully sent to the "${targetChannel.name}" channel with the title: "${customTitle}", text: "${customText}", and color: "${customColor}".`);
                             
                             // Store the sent message ID
-                            sentEmbedMessageId = sentMessage.id;
+                            whaleEmbedMessageId = sentMessage.id;
+                        } catch (err) {
+                            console.error(`Error sending embed to the "${targetChannel.name}" channel:`, err);
+                            await message.reply('There was an error sending the embed. Please try again later.');
+                        }
+                    } else {
+                        await message.reply('Could not find the "◜general🍰" channel.');
+                    }
+            
+                    customTitle = "";
+                    customText = "";
+                    customColor = "#c0f7ff"; // Reset to default color
+                }
+            }
+
+            else if (message.content === 'bot_cat_animation') {
+                if (makingNewEmbed) {
+                    await message.reply('I am in the process of creating an embed. Please complete or cancel it.');
+                } 
+                
+                else if (attempEditEmbed || editingSelectedEmbed) {
+                    await message.reply('I am in the process of editing an embed. Please complete or cancel it.');
+                } 
+                
+                else {
+                    customTitle = "Cat Animation!!!";
+                    customText = " ";
+                    customColor = "#da59e3";
+                    
+                    // Create the embed using EmbedBuilder
+                    const embed = new EmbedBuilder()
+                        .setColor(customColor)
+                        .setTitle(customTitle)
+                        .setDescription(customText);
+            
+                    // Create a button using ButtonBuilder
+                    const button = new ButtonBuilder()
+                        .setCustomId('cat_animation_button')
+                        .setLabel('Start Animation')
+                        .setStyle(ButtonStyle.Primary);
+            
+                    // Create an action row for the button
+                    const row = new ActionRowBuilder().addComponents(button);
+            
+                    // Retrieve the target channel by its name
+                    if (testing) {
+                        targetChannel = message.guild.channels.cache.find(channel => channel.name === 'botbotbot' && channel.isTextBased());
+                    }
+                    else {
+                        targetChannel = message.guild.channels.cache.find(channel => channel.name === '◜general🍰' && channel.isTextBased());
+                    }
+            
+                    if (targetChannel) {
+                        try {
+                            // Send the embed and store the message ID for later
+                            const sentMessage = await targetChannel.send({ embeds: [embed], components: [row] });
+                            console.log(`Embed sent to the "${targetChannel.name}" channel with title: "${customTitle}", text: "${customText}", and color: "${customColor}".`);
+                            await message.reply(`Embed successfully sent to the "${targetChannel.name}" channel with the title: "${customTitle}", text: "${customText}", and color: "${customColor}".`);
+                            
+                            // Store the sent message ID
+                            catEmbedMessageId = sentMessage.id;
                         } catch (err) {
                             console.error(`Error sending embed to the "${targetChannel.name}" channel:`, err);
                             await message.reply('There was an error sending the embed. Please try again later.');
@@ -468,15 +533,17 @@ client.on('interactionCreate', async (interaction) => {
         console.log(`Button clicked by ${interaction.user.tag}`);
         whale_button_pressed = true;
 
-        if (!sentEmbedMessageId) {
+        if (!whaleEmbedMessageId) {
             console.error('Error: No stored message ID.');
             return;
         }
 
-        const targetChannel = interaction.guild.channels.cache.find(channel => 
-            //channel.name === 'botbotbot' && channel.isTextBased() // used for testing
-            channel.name === '◜general🍰' && channel.isTextBased()
-        );
+        if (testing) {
+            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === 'botbotbot' && channel.isTextBased());
+        }
+        else {
+            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === '◜general🍰' && channel.isTextBased());
+        }
 
         if (!targetChannel) {
             console.error('Error: Target channel not found.');
@@ -486,9 +553,10 @@ client.on('interactionCreate', async (interaction) => {
         // ✅ Pass only necessary data to the worker
         const worker = new Worker('./embedWorker.js');
         worker.postMessage({
-            messageId: sentEmbedMessageId,
+            messageId: whaleEmbedMessageId,
             channelId: targetChannel.id,
             guildId: interaction.guild.id,
+            animal: "whale"
         });
 
         worker.on('error', (err) => console.error('Worker Error:', err));
@@ -500,6 +568,53 @@ client.on('interactionCreate', async (interaction) => {
             if (message.status === 'done') {
                 console.log('Worker has finished running!');
                 whale_button_pressed = false;
+            }
+        });
+        
+
+        await interaction.deferUpdate(); // Acknowledge interaction
+    }
+
+    else if (interaction.customId === 'cat_animation_button' && !cat_button_pressed) {
+        console.log(`Button clicked by ${interaction.user.tag}`);
+        whale_button_pressed = true;
+
+        if (!catEmbedMessageId) {
+            console.error('Error: No stored message ID.');
+            return;
+        }
+
+        if (testing) {
+            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === 'botbotbot' && channel.isTextBased());
+        }
+        else {
+            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === '◜general🍰' && channel.isTextBased());
+        }
+
+
+        if (!targetChannel) {
+            console.error('Error: Target channel not found.');
+            return;
+        }
+
+        // ✅ Pass only necessary data to the worker
+        const worker = new Worker('./embedWorker.js');
+        worker.postMessage({
+            messageId: catEmbedMessageId,
+            channelId: targetChannel.id,
+            guildId: interaction.guild.id,
+            animal: "cat"
+        });
+
+        worker.on('error', (err) => console.error('Worker Error:', err));
+        worker.on('exit', (code) => {
+            if (code !== 0) console.error(`Worker stopped with exit code ${code}`);
+        });
+
+        worker.on('message', (message) => {
+            if (message.status === 'done') {
+                console.log('Worker has finished running!');
+                cat_button_pressed = false;
             }
         });
         
