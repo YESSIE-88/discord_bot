@@ -30,12 +30,15 @@ function capitalizeWords(text) {
 
 // Track bot states
 let testing = false; // Indicate if we are testing the bot (changes output channels)
+
 let makingNewEmbed = false;
 let attempEditEmbed = false;
 let editingSelectedEmbed = false;
+let makingNewEventPoll = false;
 let waitingForChannel = false;
 let waitingForTitle = false;
 let waitingForText = false;
+let waitingForTime = false;
 let waitingForColor = false;
 let waitingForEditingChoice = false;
 let targetChannel = null; // Store the selected channel
@@ -47,6 +50,16 @@ let whaleEmbedMessageId = null; // Variable to store the message ID (for the asc
 let catEmbedMessageId = null; // Variable to store the message ID (for the ascii animation)
 let whale_button_pressed = false; // Boolean to track the whale button state
 let cat_button_pressed = false; // Boolean to track the cat button state
+let editing_channel_path = false;
+let selected_channel_index = null;
+
+
+let sign_in_channel_name = '🍰﹕sign-in';
+let abscences_channel_name = '₊˚🌼ෆabsences';
+let general_channel_name = '◜general🪻';
+let testing_channel_name = 'botbotbot1';
+let event_poll_channel_name = '₊˚🌼ෆevent-polls'
+
 
 let annoying = false;
 
@@ -63,7 +76,7 @@ client.on("messageCreate", async (message) => {
         }
         
         //Sign in with the sign in channel
-        else if (message.channel.name === '🍰﹕sign-in') {
+        else if (message.channel.name === sign_in_channel_name) {
             console.log(`Message in sign-in channel: ${message.author.tag}: ${message.content}`);
             
             try {
@@ -133,7 +146,75 @@ client.on("messageCreate", async (message) => {
         else if (message.channel.name === 'random') {
 
             if (message.content === 'help' || message.content === 'Help') {
-                await message.reply('The commands you can use are:\nbot_be_annoying (makes the bot repeat everything everyone says)\nbot_stop_annoying (makes the bot stop repeating everything)\nbot_make_embed (create an embed)\nbot_cancel_make_embed (discard embed creation)\nbot_edit_embed (edit an already existing embed)\nbot_cancel_edit_embed (discard editing an embed)\nbot_whale_animation (whale ascii animation in embed)\nbot_cat_animation (cat ascii animation in embed)')
+                await message.reply(`
+                    The commands you can use are:
+                    \nbot_be_annoying (makes the bot repeat everything everyone says)
+                    \nbot_stop_annoying (makes the bot stop repeating everything)
+                    \nbot_make_embed (create an embed)
+                    \nbot_cancel_make_embed (discard embed creation)
+                    \nbot_make_event_poll (create an event poll)
+                    \nbot_cancel_make_event_poll (discard event poll creation)
+                    \nbot_edit_embed (edit an already existing embed)
+                    \nbot_cancel_edit_embed (discard editing an embed)
+                    \nbot_whale_animation (whale ascii animation in embed)
+                    \nbot_cat_animation (cat ascii animation in embed)
+                    \nbot_change_channel_path (change the values of the variables for the target channels of the bot)`)
+            }
+
+            else if (message.content === 'bot_change_channel_path') {
+                editing_channel_path = true;
+                selected_channel_index = null;
+
+                await message.reply(
+                    `Editing channel path for bot:\n` +
+                    `1. sign_in_channel_name = ${sign_in_channel_name}\n` +
+                    `2. abscences_channel_name = ${abscences_channel_name}\n` +
+                    `3. general_channel_name = ${general_channel_name}\n` +
+                    `4. testing_channel_name = ${testing_channel_name}\n` +
+                    `5. event_poll_channel_name = ${event_poll_channel_name}\n\n` +
+                    `Reply with 1, 2, 3, 4, or 5 to edit the corresponding channel name, or anything else to cancel.`
+                );
+            }
+
+            // Wait for number input (1–5)
+            else if (editing_channel_path && selected_channel_index === null) {
+                const input = message.content.trim();
+                if (['1', '2', '3', '4', '5'].includes(input)) {
+                    selected_channel_index = parseInt(input);
+                    await message.reply('Please enter the **new channel name** to assign to this path.');
+                } else {
+                    editing_channel_path = false;
+                    await message.reply('Channel path edit cancelled.');
+                }
+            }
+
+            // Wait for new channel name
+            else if (editing_channel_path && selected_channel_index !== null) {
+                const newChannelName = message.content.trim();
+
+                switch (selected_channel_index) {
+                    case 1:
+                        sign_in_channel_name = newChannelName;
+                        break;
+                    case 2:
+                        abscences_channel_name = newChannelName;
+                        break;
+                    case 3:
+                        general_channel_name = newChannelName;
+                        break;
+                    case 4:
+                        testing_channel_name = newChannelName;
+                        break;
+                    case 5:
+                        event_poll_channel_name = newChannelName;
+                        break;
+                }
+
+                await message.reply(`Channel path updated for option ${selected_channel_index}: now set to "${newChannelName}".`);
+
+                // Reset state
+                editing_channel_path = false;
+                selected_channel_index = null;
             }
 
             else if (message.content === 'bot_be_annoying'){
@@ -154,6 +235,10 @@ client.on("messageCreate", async (message) => {
                 
                 else if (attempEditEmbed || editingSelectedEmbed) {
                     await message.reply('I am alreay in the process of editing an embed. Please complete or cancel it.');
+                }
+
+                else if (makingNewEventPoll){
+                    await message.reply('I am alreay in the process of making an event poll. Please complete or cancel it.');
                 }
 
                 else {
@@ -190,6 +275,10 @@ client.on("messageCreate", async (message) => {
                 else if (attempEditEmbed || editingSelectedEmbed) {
                     await message.reply('I am alreay in the process of editing an embed. Please complete or cancel it.');
                 }
+
+                else if (makingNewEventPoll){
+                    await message.reply('I am alreay in the process of making an event poll. Please complete or cancel it.');
+                }
                 
                 else {
                     waitingForChannel = true;
@@ -217,6 +306,40 @@ client.on("messageCreate", async (message) => {
                 }
             }
 
+            else if (message.content === 'bot_make_event_poll') {
+                if (makingNewEmbed) {
+                    await message.reply('I am already in the process of creating an embed. Please complete or cancel it.');
+                } 
+                
+                else if (attempEditEmbed || editingSelectedEmbed) {
+                    await message.reply('I am alreay in the process of editing an embed. Please complete or cancel it.');
+                }
+
+                else if (makingNewEventPoll){
+                    await message.reply('I am alreay in the process of making an event poll. Please complete or cancel it.');
+                }
+
+                else {
+                    makingNewEventPoll = true;
+                    waitingForTitle = true;
+                    await message.reply('What title would you like for the event poll?');
+                }
+            }
+
+            else if (message.content === 'bot_cancel_make_event_poll'){
+                if (makingNewEventPoll) {
+                    waitingForTitle = false;
+                    waitingForText = false;
+                    waitingForTime = false;
+                    customTitle = "";
+                    customText = "";
+                    makingNewEventPoll = false;
+                    await message.reply('Canceled making the event poll.');
+                } else {
+                    await message.reply('There is no event poll creation process to cancel.');
+                }
+            }
+
             // Handle channel response when waiting for channel input
             else if (waitingForChannel) {
                 const targetChannelName = message.content.trim();
@@ -239,11 +362,12 @@ client.on("messageCreate", async (message) => {
             else if (waitingForTitle) {
                 customTitle = message.content.trim();
                 
-                if (makingNewEmbed) {
+                if (makingNewEmbed || makingNewEventPoll) {
                     waitingForTitle = false; // Reset title state
                     waitingForText = true; // Move to the next step
-                    await message.reply(`Title saved. What body text would you like for the embed?`);
-                } 
+                    embed_or_event_poll = makingNewEmbed ? "embed" : "event poll";
+                    await message.reply(`Title saved. What body text would you like for the ${embed_or_event_poll}?`);
+                }
                 
                 else if (attempEditEmbed) {
                     // Check embed exists
@@ -281,11 +405,18 @@ client.on("messageCreate", async (message) => {
             // Handle text response when waiting for text input
             else if (waitingForText) {
                 customText = message.content.trim();
-                if (makingNewEmbed){
+
+                if (makingNewEmbed) {
+                    waitingForColor = true;
                     waitingForText = false; // Reset text state
-                    waitingForColor = true; // Move to the next step
                     await message.reply(`Text saved. Please provide a color code for the embed in the format "#RRGGBB". For example: "#c0f7ff".`);
                 } 
+                
+                else if (makingNewEventPoll) {
+                    waitingForTime = true;
+                    waitingForText = false; // Reset text state
+                    await message.reply(`Text saved. What time is the event? Please provide a time in the format "hh:mm AM/PM". For example: "08:30 PM".`);
+                }
                 
                 else if(editingSelectedEmbed) {
                     const oldEmbed = targetEmbed.embeds[0];
@@ -350,6 +481,53 @@ client.on("messageCreate", async (message) => {
                 }
             }
 
+            else if (waitingForTime) {
+                const timeInput = message.content.trim();
+                const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
+
+                if (timeRegex.test(timeInput)) {
+                    eventColor = "#CE9C5C"
+                    customTime = timeInput;
+                    waitingForTime = false;
+
+                    if (makingNewEventPoll) {
+                        const embed = {
+                            color: parseInt(eventColor.slice(1), 16),
+                            title: customTitle,
+                            description: `\n\n${customText}\n\nWhen: Tonight @ ${customTime.toUpperCase()} EST\n\n💚 I will be attending\n🟡 I will maybe be attending\n🟥 I won’t be attending\n\nPlease answer the following at least an hour prior to the event!`,
+                        };
+
+                        try {
+                            const targetChannelName = testing ? testing_channel_name : event_poll_channel_name;
+                            targetChannel = message.guild.channels.cache.find(channel => channel.name === targetChannelName);
+
+                            const sentMessage = await targetChannel.send({ embeds: [embed] });
+
+                            // React to the message with the required emojis
+                            await sentMessage.react('💚');
+                            await sentMessage.react('🟡');
+                            await sentMessage.react('🟥');
+
+                            console.log(`Event poll sent to "${targetChannel.name}" with title: "${customTitle}", time: "${customTime}".`);
+                            await message.reply(`Event poll successfully sent to "${targetChannel.name}"!`);
+                        } catch (err) {
+                            console.error(`Error sending event poll to "${targetChannel?.name}":`, err);
+                            await message.reply('There was an error sending the event poll. Please try again later.');
+                        }
+
+                        // Reset all states
+                        targetChannel = null;
+                        customTitle = "";
+                        customText = "";
+                        customTime = "";
+                        makingNewEventPoll = false;
+                    }
+
+                } else {
+                    await message.reply('Invalid time format. Please provide a valid time in the format "hh:mm AM/PM". For example: "08:30 AM" or "2:45 pm".');
+                }
+            }
+
             else if (waitingForEditingChoice){
                 if (message.content === '1') {
                     await message.reply('Please enter the new title');
@@ -408,10 +586,10 @@ client.on("messageCreate", async (message) => {
             
                     // Retrieve the target channel by its name
                     if (testing) {
-                        targetChannel = message.guild.channels.cache.find(channel => channel.name === 'botbotbot' && channel.isTextBased());
+                        targetChannel = message.guild.channels.cache.find(channel => channel.name === testing_channel_name && channel.isTextBased());
                     }
                     else {
-                        targetChannel = message.guild.channels.cache.find(channel => channel.name === '◜general🍰' && channel.isTextBased());
+                        targetChannel = message.guild.channels.cache.find(channel => channel.name === general_channel_name && channel.isTextBased());
                     }
             
                     if (targetChannel) {
@@ -428,7 +606,7 @@ client.on("messageCreate", async (message) => {
                             await message.reply('There was an error sending the embed. Please try again later.');
                         }
                     } else {
-                        await message.reply('Could not find the "◜general🍰" channel.');
+                        await message.reply(`Could not find the "${general_channel_name}" channel.`);
                     }
             
                     customTitle = "";
@@ -468,10 +646,10 @@ client.on("messageCreate", async (message) => {
             
                     // Retrieve the target channel by its name
                     if (testing) {
-                        targetChannel = message.guild.channels.cache.find(channel => channel.name === 'botbotbot' && channel.isTextBased());
+                        targetChannel = message.guild.channels.cache.find(channel => channel.name === testing_channel_name && channel.isTextBased());
                     }
                     else {
-                        targetChannel = message.guild.channels.cache.find(channel => channel.name === '◜general🍰' && channel.isTextBased());
+                        targetChannel = message.guild.channels.cache.find(channel => channel.name === general_channel_name && channel.isTextBased());
                     }
             
                     if (targetChannel) {
@@ -488,7 +666,7 @@ client.on("messageCreate", async (message) => {
                             await message.reply('There was an error sending the embed. Please try again later.');
                         }
                     } else {
-                        await message.reply('Could not find the "◜general🍰" channel.');
+                        await message.reply(`Could not find the "${general_channel_name}" channel.`);
                     }
             
                     customTitle = "";
@@ -500,7 +678,7 @@ client.on("messageCreate", async (message) => {
         }
 
         // Copy messages over from the abscences anouncement channel to the logging channel
-        else if (message.channel.name === '₊˚🌼ෆabsences') {
+        else if (message.channel.name === abscences_channel_name) {
             // Get the sender's display name or username
             const senderName = message.member ? message.member.displayName : message.author.username;
             
@@ -539,10 +717,10 @@ client.on('interactionCreate', async (interaction) => {
         }
 
         if (testing) {
-            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === 'botbotbot' && channel.isTextBased());
+            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === testing_channel_name && channel.isTextBased());
         }
         else {
-            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === '◜general🍰' && channel.isTextBased());
+            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === general_channel_name && channel.isTextBased());
         }
 
         if (!targetChannel) {
@@ -585,10 +763,10 @@ client.on('interactionCreate', async (interaction) => {
         }
 
         if (testing) {
-            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === 'botbotbot' && channel.isTextBased());
+            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === testing_channel_name && channel.isTextBased());
         }
         else {
-            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === '◜general🍰' && channel.isTextBased());
+            targetChannel = interaction.guild.channels.cache.find(channel => channel.name === general_channel_name && channel.isTextBased());
         }
 
 
