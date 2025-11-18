@@ -174,15 +174,17 @@ client.on("messageCreate", async (message) => {
                     `2. abscences_channel_name = ${abscences_channel_name}\n` +
                     `3. general_channel_name = ${general_channel_name}\n` +
                     `4. testing_channel_name = ${testing_channel_name}\n` +
-                    `5. event_poll_channel_name = ${event_poll_channel_name}\n\n` +
-                    `Reply with 1, 2, 3, 4, or 5 to edit the corresponding channel name, or anything else to cancel.`
+                    `5. event_poll_channel_name = ${event_poll_channel_name}\n` +
+                    `6. welcome_channel_name = ${welcome_channel_name}\n` +
+                    `7. interview_voice_channel_name = ${interview_voice_channel_name}\n\n` +
+                    `Reply with 1, 2, 3, 4, 5, 6 or 7 to edit the corresponding channel name, or anything else to cancel.`
                 );
             }
 
             // Wait for number input (1–5)
             else if (editing_channel_path && selected_channel_index === null) {
                 const input = message.content.trim();
-                if (['1', '2', '3', '4', '5'].includes(input)) {
+                if (['1', '2', '3', '4', '5', '6', '7'].includes(input)) {
                     selected_channel_index = parseInt(input);
                     await message.reply('Please enter the **new channel name** to assign to this path.');
                 } else {
@@ -210,6 +212,12 @@ client.on("messageCreate", async (message) => {
                         break;
                     case 5:
                         event_poll_channel_name = newChannelName;
+                        break;
+                    case 6:
+                        welcome_channel_name = newChannelName;
+                        break;
+                    case 6:
+                        interview_voice_channel_name = newChannelName;
                         break;
                 }
 
