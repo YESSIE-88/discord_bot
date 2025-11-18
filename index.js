@@ -54,13 +54,27 @@ let editing_channel_path = false;
 let selected_channel_index = null;
 
 
-let sign_in_channel_name = 'general_bt_text';
 let abscences_channel_name = '₊˚🌼ෆabsences';
 let general_channel_name = '◜general🪻';
 let testing_channel_name = 'botbotbot1';
 let event_poll_channel_name = '₊˚🌼ෆevent-polls';
-let welcome_channel_name = 'welcome';
-let interview_voice_channel_name = "general_bt_voice";
+
+const channels = testing
+  ? {
+      welcome: 'welcome',
+      interview: 'general_bt_voice',
+      signIn: 'general_bt_text'
+    }
+  : {
+      welcome: '◜🌸₊welcome',
+      interview: '🌙﹕interview-chat',
+      signIn: '🌟﹕sign-in'
+    };
+
+let welcome_channel_name   = channels.welcome;
+let interview_channel_name = channels.interview;
+let sign_in_channel_name   = channels.signIn;
+
 
 
 
@@ -176,7 +190,7 @@ client.on("messageCreate", async (message) => {
                     `4. testing_channel_name = ${testing_channel_name}\n` +
                     `5. event_poll_channel_name = ${event_poll_channel_name}\n` +
                     `6. welcome_channel_name = ${welcome_channel_name}\n` +
-                    `7. interview_voice_channel_name = ${interview_voice_channel_name}\n\n` +
+                    `7. interview_channel_name = ${interview_channel_name}\n\n` +
                     `Reply with 1, 2, 3, 4, 5, 6 or 7 to edit the corresponding channel name, or anything else to cancel.`
                 );
             }
@@ -217,7 +231,7 @@ client.on("messageCreate", async (message) => {
                         welcome_channel_name = newChannelName;
                         break;
                     case 6:
-                        interview_voice_channel_name = newChannelName;
+                        interview_channel_name = newChannelName;
                         break;
                 }
 
@@ -813,30 +827,30 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 
-// client.on("guildMemberAdd", async (member) => {
+client.on("guildMemberAdd", async (member) => {
 
-//     const channel = member.guild.channels.cache.find(
-//         ch => ch.name === welcome_channel_name && ch.isTextBased()
-//     );
+    const channel = member.guild.channels.cache.find(
+        ch => ch.name === welcome_channel_name && ch.isTextBased()
+    );
 
-//     if (!channel) {
-//         console.error(`Welcome channel "${welcome_channel_name}" not found.`);
-//         return;
-//     }
+    if (!channel) {
+        console.error(`Welcome channel "${welcome_channel_name}" not found.`);
+        return;
+    }
 
-//     // Build embed with your new formatting
-//     const welcomeEmbed = new EmbedBuilder()
-//         .setColor("#FFC8F0")
-//         // ${member.user.username} if you want to display the users name
-//         .setTitle(`🌈⭐ Welcome to *${member.guild.name}*!!  ⭐🌈`)
-//         .setDescription(
-//             `\nWhile you wait for your interview, please make sure to head over to:` + 
-//             `<#${member.guild.channels.cache.find(ch => ch.name === sign_in_channel_name)?.id}>\n\n` +
-//             `Afterwards, let us know when you'll be available for a quick **15 minute voice-chat interview** with our leaders in:\n` +
-//             `<#${member.guild.channels.cache.find(ch => ch.name === interview_voice_channel_name)?.id}>\n\n` +
-//             `Thank you, and good luck! ^-^`
-//         )
-//         .setTimestamp();
+    // Build embed with your new formatting
+    const welcomeEmbed = new EmbedBuilder()
+        .setColor("#733d7e")
+        // ${member.user.username} if you want to display the users name
+        .setTitle(`- Welcome to *${member.guild.name}*!! ✨`)
+        .setDescription(
+            `\nWhile you wait for your interview, please make sure to ` + 
+            `<#${member.guild.channels.cache.find(ch => ch.name === sign_in_channel_name)?.id}>\n\n` +
+            `Afterwards, please let us know when you'll be able to have a 15 minute voice-chat interview with our leaders in ` +
+            `<#${member.guild.channels.cache.find(ch => ch.name === interview_channel_name)?.id}>\n\n` +
+            `Thank you, and good luck! ^-^`
+        )
 
-//     channel.send({ embeds: [welcomeEmbed] });
-// });
+
+    channel.send({ embeds: [welcomeEmbed] });
+});
