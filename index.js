@@ -842,7 +842,7 @@ client.on("guildMemberAdd", async (member) => {
     const welcomeEmbed = new EmbedBuilder()
         .setColor("#733d7e")
         // ${member.user.username} if you want to display the users name
-        .setTitle(`- Welcome to *${member.guild.name}*!! ✨`)
+        .setTitle(`- Welcome to ${member.guild.name} !!`)
         .setDescription(
             `\nWhile you wait for your interview, please make sure to ` + 
             `<#${member.guild.channels.cache.find(ch => ch.name === sign_in_channel_name)?.id}>\n\n` +
