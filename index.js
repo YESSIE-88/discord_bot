@@ -849,8 +849,20 @@ client.on("guildMemberAdd", async (member) => {
             `Afterwards, please let us know when you'll be able to have a 15 minute voice-chat interview with our leaders in ` +
             `<#${member.guild.channels.cache.find(ch => ch.name === interview_channel_name)?.id}>\n\n` +
             `Thank you, and good luck! ^-^`
-        )
-
-
-    channel.send({ embeds: [welcomeEmbed] });
+        );
+    
+    // Send the welcome embed
+    await channel.send({ embeds: [welcomeEmbed] });
+    
+    // Find the Recruiter role by ID
+    const recruiterRole = member.guild.roles.cache.get("1362564834906083388");
+    
+    if (recruiterRole) {
+        // Send a separate message pinging the role
+        await channel.send({
+            content: `${recruiterRole} - New member ${member.user.username} has joined and needs an interview!`
+        });
+    } else {
+        console.error('Recruiter role not found.');
+    }
 });
