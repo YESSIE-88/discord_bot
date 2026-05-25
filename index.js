@@ -66,9 +66,9 @@ const channels = testing
       signIn: 'general_bt_text'
     }
   : {
-      welcome: '◜🌸₊welcome',
-      interview: '🌙﹕interview-chat',
-      signIn: '🌟﹕sign-in'
+      welcome: '1293235963799142447',
+      interview: '1293235964432351244', // Hardcoded channel IDs to ensure functionality works if channels renamed
+      signIn: '1293235963799142448'
     };
 
 let welcome_channel_name   = channels.welcome;
@@ -828,40 +828,37 @@ client.on('interactionCreate', async (interaction) => {
 
 
 client.on("guildMemberAdd", async (member) => {
-
-    const channel = member.guild.channels.cache.find(
-        ch => ch.name === welcome_channel_name && ch.isTextBased()
-    );
-
+    // Console log when a new member joins
+    console.log(`New member joined: ${member.user.tag} (${member.user.id})`);
+    
+    const channel = member.guild.channels.cache.get(channels.welcome);
+    
     if (!channel) {
-        console.error(`Welcome channel "${welcome_channel_name}" not found.`);
+        console.error(`Welcome channel not found.`);
         return;
     }
-
-    // Build embed with your new formatting
+    
     const welcomeEmbed = new EmbedBuilder()
         .setColor("#733d7e")
-        // ${member.user.username} if you want to display the users name
         .setTitle(`- Welcome to ${member.guild.name} !!`)
         .setDescription(
             `\nWhile you wait for your interview, please make sure to ` + 
-            `<#${member.guild.channels.cache.find(ch => ch.name === sign_in_channel_name)?.id}>\n\n` +
+            `<#${channels.signIn}>\n\n` +
             `Afterwards, please let us know when you'll be able to have a 15 minute voice-chat interview with our leaders in ` +
-            `<#${member.guild.channels.cache.find(ch => ch.name === interview_channel_name)?.id}>\n\n` +
+            `<#${channels.interview}>\n\n` +
             `Thank you, and good luck! ^-^`
         );
     
-    // Send the welcome embed
     await channel.send({ embeds: [welcomeEmbed] });
+    console.log(`Welcome message sent to ${member.user.tag}`);
     
-    // Find the Recruiter role by ID
     const recruiterRole = member.guild.roles.cache.get("1362564834906083388");
     
     if (recruiterRole) {
-        // Send a separate message pinging the role
         await channel.send({
             content: `${recruiterRole} - New member ${member.user.username} has joined and needs an interview!`
         });
+        console.log(`Recruiter ping sent for ${member.user.tag}`);
     } else {
         console.error('Recruiter role not found.');
     }
